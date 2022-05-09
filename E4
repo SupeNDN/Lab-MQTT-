@@ -1,0 +1,88 @@
+#include <WiFi.h> // librería con la cual se trabaja la tarjeta ESP32
+WiFiClient WIFI_CLIENT; // arreglo para la conexión al wifi
+#include <PubSubClient.h>  // libreria para la publicación mqtt tomar la de Nick O’leary
+PubSubClient MQTT_CLIENT;  // arreglo para la conexión mqtt
+const char* ssid = "supe";  // ssid de la red (nombre de la red)
+const char* password = "noseaaaa"; // (contraseña de la red)
+#define       LED2    13
+
+
+// const byte led4 = D4; // LED ESP8266
+void setup() {
+  pinMode(LED2, OUTPUT);//confifurar led como salida
+
+  Serial.begin(115200);   // configuracion de la velocidad del monitor serial arranque del serial
+  delay(10);                       //pausa de 10 ms
+  Serial.println();              //  enter el el monitor serial
+  Serial.print(" Conectando con la red: ");  // mensaje de conexión
+  Serial.println(ssid);          // mensaje de conexión con la red incluye nombre de la red
+  WiFi.begin(ssid, password); //arranque de la librería wifi
+  while (WiFi.status() != WL_CONNECTED) {  //mientras que no se conecte imprima un punto
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("");  //imprima salto de línea enter
+  Serial.print("WiFi conectado con IP: "); // al conectarse imprima conectado
+  Serial.println(WiFi.localIP()); //            imprima la dirección ip
+  // Setting Callback.
+  MQTT_CLIENT.setCallback(callback);   // llamada de vuelta
+}
+// funcion que se ejecuta cuando recibe datos
+void callback(char* recibido, byte* payload, unsigned int length) {   // funcion llamada de devuelta
+  Serial.print("Mensaje recibido: ");                                 // imprime mensaje recibido
+  Serial.print(recibido);                                             // imprime el subtoping de la coneccion mqtt.
+  Serial.print("   ");                                                // imprime espacios
+
+
+  for (int i = 0; i < length; i++) {                                 // for para recorrer la informacion que llego
+    char receivedChar = (char)payload[i];                             // se crea variable char para guardar informcacion recibida receivedChar
+    Serial.print(receivedChar);                                      // se imprime el valor recibido en el puerto serial
+    if (receivedChar == '1' ) {         // se pregunta por la variable recibida y por el Subtopic
+      digitalWrite(LED2, HIGH);
+    }               //
+    if (receivedChar == '0'  ) {       // se pregunta por la variable recibida y por el Subtopic
+      digitalWrite(LED2, LOW);
+    }
+
+
+
+
+  }
+  Serial.println();
+}
+
+void loop() {
+  if (!MQTT_CLIENT.connected()) {
+    reconnect();
+  }
+  // Publish topic.
+  // Convierte el entero a char. Debe ser char.
+  int aleatorio = random(1, 90); //aleatorio entre 1 y 90
+  String aleatorioString = String(aleatorio); //se crea variable aleatorioString y se deposita el numero aleatorio convertido en texto.
+  char alea[6];   // se crea un arreglo de 6 posiciones llamado alea
+  aleatorioString.toCharArray(alea, 6); // se convierte el string en u arreglo char de 6 posiciones.
+  MQTT_CLIENT.publish("xd/dato", alea);  // se publica el subtoping Javier/dato con el arreglo alea.
+
+  delay(100);
+  Serial.println(alea);  // se imprime la variable alea
+  // Wait 5 s.
+  delay(900);
+
+  MQTT_CLIENT.loop(); // Check Subscription.
+}
+// Reconecta con MQTT broker
+void reconnect() {
+  MQTT_CLIENT.setServer("broker.hivemq.com", 1883);
+
+  MQTT_CLIENT.setClient(WIFI_CLIENT);
+  while (!MQTT_CLIENT.connected()) {
+
+    Serial.println("intentando conectar con Broker MQTT.");
+    MQTT_CLIENT.connect("Supe");
+    MQTT_CLIENT.subscribe("xd/boton");
+    
+
+    delay(3000);
+  }
+  Serial.println("Conectado a MQTT.");
+}
