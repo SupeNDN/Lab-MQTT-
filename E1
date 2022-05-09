@@ -1,0 +1,52 @@
+#include <WiFi.h> 
+WiFiClient WIFI_CLIENT; 
+#include <PubSubClient.h>  
+PubSubClient MQTT_CLIENT;  
+const char* ssid = "supe";  
+const char* password = "noseaaaa"; 
+void setup() {
+Serial.begin(115200);   
+delay(10);                       
+Serial.println();              
+Serial.print(" Conectando con la red: ");  
+Serial.println(ssid);         
+WiFi.begin(ssid, password); 
+while (WiFi.status() != WL_CONNECTED) { 
+delay(500);
+Serial.print(".");
+}
+Serial.println("");  //imprima salto de línea enter
+Serial.print("WiFi conectado con IP: "); // al conectarse imprima conectado 
+Serial.println(WiFi.localIP()); //            imprima la dirección ip
+}
+void loop() {
+// conexión con el broket MQTT en caso de que no tenga, reconecta.
+if (!MQTT_CLIENT.connected()) {
+reconnect();
+}
+// Publish topic.
+// Convierte el entero a char. Debe ser char.
+int aleatorio = random(1,90);  //aleatorio entre 1 y 90
+String aleatorioString = String(aleatorio); //se crea variable aleatorioString y se deposita el numero aleatorio convertido en texto.
+char alea[6];   // se crea un arreglo de 6 posiciones llamado alea
+aleatorioString.toCharArray(alea, 6); // se convierte el string en u arreglo char de 6 posiciones.
+MQTT_CLIENT.publish("xd/dato", alea);  // se publica el subtoping Javier/dato con el arreglo alea.
+
+delay(100);
+Serial.println(alea);  // se imprime la variable alea
+// Wait 5 s.
+delay(900);
+}
+// Reconecta con MQTT broker
+void reconnect() {
+MQTT_CLIENT.setServer("broker.hivemq.com", 1883);   //broker utilizado en el ejercicio
+//MQTT_CLIENT.setServer("mqtt.eclipse.org", 1883);    // direccion de otro broker
+MQTT_CLIENT.setClient(WIFI_CLIENT);  // datos de la conexion
+// intento de conexión al broker.
+while (!MQTT_CLIENT.connected()) { //while que se ejecuta mientras no se este conectado al broker
+Serial.println("intentando conectar con Broker MQTT.");// muestra que esta intentando la conexion
+MQTT_CLIENT.connect("Supe"); // realiza la conexión al bróker MQTT
+delay(3000);  //pausa de 3 segundos para intentar reconectarse
+}
+Serial.println("Conectado a MQTT.");  // imprime conectado al MQTT
+}
